@@ -397,6 +397,14 @@ class EventDispatcherTest extends TestCase
 
         $this->assertTrue($testLoaded);
     }
+
+    public function testHasListenersWithEventChild()
+    {
+        $this->dispatcher->addSubscriber(new TestEventSubscriberWithEventFqcn());
+        $this->assertTrue($this->dispatcher->hasListeners());
+        $this->assertTrue($this->dispatcher->hasListeners(ParentEvent::class));
+        $this->assertTrue($this->dispatcher->hasListeners(ChildEvent::class));
+    }
 }
 
 class CallableClass
@@ -467,5 +475,23 @@ class TestEventSubscriberWithMultipleListeners implements EventSubscriberInterfa
             ['preFoo1'],
             ['preFoo2', 10],
         ]];
+    }
+}
+
+class ParentEvent extends ContractsEvent
+{
+
+}
+
+class ChildEvent extends ParentEvent
+{
+
+}
+
+class TestEventSubscriberWithEventFqcn implements EventSubscriberInterface
+{
+    public static function getSubscribedEvents()
+    {
+        return [ParentEvent::class => 'handleParentEvent'];
     }
 }
