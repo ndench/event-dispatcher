@@ -11,6 +11,7 @@
 
 namespace Symfony\Component\EventDispatcher\Tests;
 
+use Nelmio\Alice\Throwable\Exception\Generator\Resolver\ChildCircularReferenceException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
@@ -418,6 +419,17 @@ class EventDispatcherTest extends TestCase
         $this->assertSame($expected, $this->dispatcher->getListeners(ParentEvent::class));
         $this->assertSame($expected, $this->dispatcher->getListeners(ChildEvent::class));
     }
+
+    public function testDispatchWithEventChild()
+    {
+        $subscriber = new TestEventSubscriberWithEventFqcn();
+        $this->dispatcher->addSubscriber($subscriber);
+
+        $this->assertFalse($subscriber->handleParentInvoked);
+
+        $this->dispatcher->dispatch(new ChildEvent());
+        $this->assertTrue($subscriber->handleParentInvoked);
+    }
 }
 
 class CallableClass
@@ -491,7 +503,7 @@ class TestEventSubscriberWithMultipleListeners implements EventSubscriberInterfa
     }
 }
 
-class ParentEvent extends ContractsEvent
+class ParentEvent
 {
 
 }
@@ -503,8 +515,15 @@ class ChildEvent extends ParentEvent
 
 class TestEventSubscriberWithEventFqcn implements EventSubscriberInterface
 {
+    public $handleParentInvoked = false;
+
     public static function getSubscribedEvents()
     {
         return [ParentEvent::class => 'handleParentEvent'];
+    }
+
+    public function handleParentEvent($e)
+    {
+        $this->handleParentInvoked = true;
     }
 }
